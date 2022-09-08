@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Message Board</title>
+        <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/view-ui-plus/dist/styles/viewuiplus.css">
+        <script type="text/javascript" src="https://unpkg.com/vue@next"></script>
+        <script type="text/javascript" src="https://unpkg.com/view-ui-plus"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/darren2046/js@0.0.6/bagbag.js"></script>
+        <style>
+            pre {
+                white-space: pre-wrap;
+            }
+            .container {
+                padding-top: 2rem;
+                padding-bottom: 25rem;
+                padding-right: 2rem;
+                padding-left: 2rem;
+            }
+            p {
+                padding-bottom: 0.5rem;
+            }
+            .center {
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div
+                @mouseover="hover = true"
+                @mouseleave="hover = false"
+            >
+                <div class="container">
+                    <Row v-if="password!=''">
+                        <i-col span="2" offset="22">
+                            <Tooltip :content="password" placement="top">
+                                <Icon type="ios-key-outline" />
+                            </Tooltip>
+                        </i-col>
+                    </Row>
+                    <div v-if="messageDisplay">
+                        <pre>
+{{ message }}
+                        </pre>
+                    </div>
+                    <div v-if="notFoundDisplay">
+                        <h1>Not Found</h1>
+                        <p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+                    </div>
+                    <div v-if="passwordInputDisplay">
+                        <div class="center">
+                            <i-input 
+                                v-model="password" 
+                                type="password"
+                                placeholder="Enter Password"
+                                @keyup.enter="accessByPassword"
+                                style="width: 200px"
+                            >
+                        </div>
+                    </div>
+                    <div v-if="newMessageDisplay">
+                        <p>
+                            <i-input 
+                                v-model="newmessage" 
+                                type="textarea" 
+                                :autosize="{ minRows: 10 }" 
+                                placeholder="Enter Message..." 
+                            />
+                        </p>
+                        <p>
+                            <div class="center">
+                                <i-input 
+                                    v-model="newpass" 
+                                    type="password"
+                                    placeholder="Enter Password"
+                                    @keyup.enter="submitNewMessage"
+                                    style="width: 200px"
+                                />
+                            </div>
+                        </p>
+                        <p>
+                            <div class="center">
+                                <i-button 
+                                    type="default" 
+                                    @click="submitNewMessage"
+                                    ghost
+                                >
+                                    Submit
+                                </i-button>
+                            </div>
+                        </p>
+                    </div>
+                    <div v-if="additionMessageDisplay">
+                        <p>
+                            <i-input 
+                                v-model="addtionMessage" 
+                                type="textarea" 
+                                :autosize="{ minRows: 10 }" 
+                                placeholder="Enter Message..." 
+                            />
+                        </p>
+                        <p>
+                            <div class="center">
+                                <i-button 
+                                    type="default" 
+                                    @click="submitAddtionMessage"
+                                    ghost
+                                >
+                                    Submit
+                                </i-button>
+                            </div>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type = "text/javascript">
+            function sleep(second) {
+                return new Promise(resolve => setTimeout(resolve, second * 1000));
+            }
+
+            const app = Vue.createApp({
+                data() {
+                    return {
+                        hover: true,
+                        messageDisplay: false,
+                        message: '加载中...',
+                        notFoundDisplay: false,
+                        passwordInputDisplay: false,
+                        password: "",
+                        newMessageDisplay: true,
+                        newmessage: "",
+                        newpass: "",
+                        additionMessageDisplay: false, 
+                        addtionMessage: "",
+                    }
+                },
+                methods: {
+                    submitAddtionMessage(){
+                        t = this 
+                        if (t.addtionMessage.trim() == "") {
+                            return 
+                        }
+                        axios.post(
+                            window.location.pathname, 
+                            t.addtionMessage,
+                            {
+                                headers: { 
+                                    'Content-Type' : 'text/plain' 
+                                }
+                            }
+                        ).then(function (response) {
+                            t.fetch()
+                            t.addtionMessage = ""
+                        })
+                    },
+                    submitNewMessage() {
+                        t = this 
+                        if (t.newmessage.trim() == "") {
+                            return 
+                        }
+                        axios.post(
+                            "/" + t.newpass, 
+                            t.newmessage,
+                            {
+                                headers: { 
+                                    'Content-Type' : 'text/plain' 
+                                }
+                            }
+                        ).then(function (response) {
+                            console.log(response)
+                            window.location = response.data.trim()
+                            t.fetch()
+                        })
+                    },
+                    accessByPassword() {
+                        this.fetch()
+                    }, 
+                    fetch(){
+                        t = this
+                        if (window.location.pathname != "/") {
+                            url = window.location.pathname
+                            if (t.password != "") {
+                                url = url + "/" + t.password
+                            }
+                            axios
+                                .get(url)
+                                .then(function (response) {
+                                    t.message = response.data
+                                    t.messageDisplay = true
+                                    t.notFoundDisplay = false
+                                    t.passwordInputDisplay = false
+                                    t.newMessageDisplay = false
+                                    t.additionMessageDisplay = true
+                                })
+                                .catch(function (error) {
+                                    if (error.response.status == 404) {
+                                        t.notFoundDisplay = true
+                                        t.messageDisplay = false
+                                        t.passwordInputDisplay = false
+                                        t.newMessageDisplay = false
+                                        t.additionMessageDisplay = false
+                                    } else if (error.response.status == 403) {
+                                        t.password = ""
+                                        t.notFoundDisplay = false
+                                        t.messageDisplay = false
+                                        t.passwordInputDisplay = true
+                                        t.newMessageDisplay = false
+                                        t.additionMessageDisplay = false
+                                    }
+                                });
+                        } else {
+                            t.newMessageDisplay = true
+                            t.notFoundDisplay = false
+                            t.messageDisplay = false
+                            t.passwordInputDisplay = false
+                            t.additionMessageDisplay = false
+                        }
+                    }, 
+                    async updateForever() {
+                        t = this 
+                        while (true) {
+                            if (window.location.pathname != "/" && t.hover) {
+                                t.fetch()
+                                await sleep(10)
+                            } else {
+                                await sleep(1)
+                            }
+                        }
+                    },
+                },
+                mounted () {
+                    t = this
+                    t.updateForever()
+                }  
+            });
+            app.use(ViewUIPlus);
+            app.mount("#app");
+        </script>
+    </body>
+</html>

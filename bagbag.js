@@ -1,3 +1,3 @@
-function bagbagVersion() {
-    return "0.0.3"
+function sleep(second) {
+    return new Promise(resolve => setTimeout(resolve, second * 1000));
 }
